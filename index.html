@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STORY MOVIES - Watch & Download</title>
+<meta name="theme-color" content="#0f0f0f">
+<!-- PWA FOR APK -->
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="https://picsum.photos/192/192?21">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
+body{background:#0f0f0f;color:#fff}
+header{background:#000;padding:12px 15px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:20;border-bottom:1px solid #222}
+header h1{color:#E50914;font-size:22px}header h1 span{color:#fff}
+.search{flex:1;margin:0 10px;background:#222;border:none;padding:10px;border-radius:20px;color:#fff;outline:none}
+.tabs{display:flex;gap:8px;padding:10px;overflow-x:auto;background:#0f0f0f;position:sticky;top:52px;z-index:20}
+.tabs button{background:#222;color:#fff;border:none;padding:8px 16px;border-radius:20px;white-space:nowrap}
+.tabs button.active{background:#E50914}
+.hero{position:relative;height:280px;overflow:hidden}.hero img{width:100%;height:100%;object-fit:cover}
+.hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,#0f0f0f 5%,transparent 60%);display:flex;flex-direction:column;justify-content:flex-end;padding:15px}
+.btn{border:none;padding:12px 20px;border-radius:8px;font-weight:bold;cursor:pointer}
+.btn-red{background:#E50914;color:#fff}.btn-white{background:#fff;color:#000}.btn-dark{background:#222;color:#fff}.btn-green{background:#25D366;color:#fff}.btn-blue{background:#2196F3;color:#fff}.btn-gold{background:#FFD700;color:#000}.btn-vip{background:linear-gradient(45deg,#FFD700,#FFA500);color:#000}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px}
+.card{background:#1a1a1a;border-radius:12px;overflow:hidden;cursor:pointer;position:relative}.card img{width:100%;height:160px;object-fit:cover}
+.card-body{padding:10px}.card-body h3{font-size:14px}.card-body p{font-size:11px;color:#aaa;margin-top:4px}
+.lock-badge{position:absolute;top:8px;right:8px;background:#FFD700;color:#000;padding:4px 8px;border-radius:20px;font-size:11px;font-weight:bold}
+.vip-badge{position:absolute;top:8px;left:8px;background:#E50914;color:#fff;padding:4px 8px;border-radius:20px;font-size:11px;font-weight:bold}
+.section{padding:10px}.row{display:flex;gap:10px;overflow-x:auto;padding:0 10px}.row .card{flex:0 0 150px}.row .card img{height:210px}
+.auth{background:#000;min-height:100vh;padding:30px 20px;text-align:center}.auth input{width:100%;padding:14px;border:none;border-radius:8px;margin-top:10px;background:#222;color:#fff}
+.hidden{display:none!important}
+.admin-box{background:#1a1a1a;margin:10px;padding:15px;border-radius:12px}
+.admin-box input,.admin-box textarea,.admin-box select{width:100%;padding:12px;border:1px solid #333;border-radius:8px;margin-top:8px;background:#222;color:#fff}
+.upload-zone{border:2px dashed #E50914;border-radius:12px;padding:20px;text-align:center;margin-top:10px;background:#111}
+.progress{height:12px;background:#222;border-radius:10px;overflow:hidden;margin-top:10px;display:none}
+.progress-bar{height:100%;background:#E50914;width:0%}
+.video-modal{position:fixed;inset:0;background:#000;z-index:100;display:none;flex-direction:column}
+.video-modal video,.video-modal iframe{width:100%;flex:1;background:#000}
+.video-top{padding:12px;display:flex;justify-content:space-between;align-items:center}
+.download-bar{background:#111;padding:12px;display:flex;gap:8px;flex-wrap:wrap}.download-bar button{flex:1}
+.episode{display:flex;gap:10px;background:#1a1a1a;padding:10px;margin:10px;border-radius:10px;align-items:center}
+.episode img{width:80px;height:55px;object-fit:cover;border-radius:8px}
+.badge-free{background:#25D366;color:#fff;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:bold}
+.file-info{background:#222;padding:10px;border-radius:8px;margin-top:10px;font-size:12px;display:none}
+.sync-box{background:#0a2a0a;border:1px solid #25D366;padding:12px;border-radius:12px;margin-top:10px}
+.pay-modal{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.pay-card{background:#1a1a1a;padding:20px;border-radius:16px;width:100%;max-width:400px;border:2px solid #FFD700}
+.pay-option{display:flex;justify-content:space-between;background:#222;padding:12px;border-radius:10px;margin-top:8px;cursor:pointer;border:2px solid transparent}
+.pay-option.active{border-color:#FFD700;background:#333}
+.vip-banner{background:linear-gradient(45deg,#FFD700,#FFA500);color:#000;padding:15px;margin:10px;border-radius:12px;text-align:center}
+.install-banner{background:#25D366;color:#fff;padding:12px;margin:10px;border-radius:12px;display:flex;justify-content:space-between;align-items:center}
+</style>
+</head>
+<body>
+
+<div id="homeScreen">
+<header><h1>STORY<span>MOVIES</span></h1><input class="search" id="searchInput" placeholder="🔍 Search..." oninput="searchMovies()"><button onclick="openAdminLogin()" style="background:#E50914;color:#fff;border:none;padding:8px 12px;border-radius:20px;font-size:12px">👑 Admin</button></header>
+<div class="tabs"><button class="active" onclick="filterCat('All',this)">All</button><button onclick="filterCat('Series',this)">📺 Series</button><button onclick="filterCat('Movie',this)">🎬 Movies</button><button onclick="filterCat('Horror',this)">👻 Horror</button><button onclick="filterCat('Premium',this)">🔒 Premium</button><button onclick="filterCat('Free',this)">🆓 Free</button><button onclick="filterCat('Downloads',this)">⬇️ My Downloads</button></div>
+<div style="background:#111;padding:8px 10px;font-size:12px;display:flex;justify-content:space-between"><span id="syncStatus">🔴 Connecting...</span><span id="walletDisplay">💰 UGX 0 earned</span></div>
+
+<!-- VIP BANNER -->
+<div id="vipBanner" class="vip-banner">
+<h3>👑 VIP - Watch ALL Movies FREE!</h3><p style="font-size:12px">No locks, No ads, Early access to all movies!</p><p style="font-size:13px;margin-top:5px"><b>Only UGX 10,000 / Month</b> • <span id="vipStatus">Not VIP yet</span></p>
+<button class="btn" style="background:#000;color:#FFD700;margin-top:8px" onclick="buyVIP()">👑 BECOME VIP - UGX 10,000</button>
+</div>
+
+<!-- INSTALL APK BANNER -->
+<div id="installBanner" class="install-banner">
+<div><b>📱 Install STORY MOVIES App</b><br><span style="font-size:12px">Faster, Offline, No browser needed!</span></div>
+<button onclick="installAPK()" style="background:#fff;color:#25D366;border:none;padding:10px 15px;border-radius:20px;font-weight:bold">⬇️ INSTALL APK</button>
+</div>
+
+<div class="hero"><img id="heroImg" src="https://picsum.photos/800/400?21"><div class="hero-overlay"><span class="badge-free">FREE • WATCH & DOWNLOAD</span><h2 id="heroTitle">Shadows Of The Abyss - S2</h2><p id="heroDesc" style="font-size:13px;color:#ccc">Baby Nakato is born...</p><div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-red" onclick="playFeatured()">▶️ Watch Now</button><button class="btn btn-white" onclick="downloadFeatured()">⬇️ Download Free</button></div></div></div>
+
+<div class="section"><h2>🔥 Trending Now</h2></div><div class="row" id="trendingRow"></div>
+<div class="section"><h2>🎬 All Movies & Series</h2><p style="font-size:12px;color:#aaa" id="movieCount"></p></div>
+<div class="grid" id="movieGrid"></div>
+<div class="section"><h2>📺 Episodes</h2></div><div id="episodeList"></div>
+
+<!-- SUPER CHAT -->
+<div class="section"><h2>💛 Super Chat - Support The Channel</h2><div style="background:#1a1a1a;padding:15px;border-radius:12px;border:2px solid #FFD700">
+<p style="font-size:12px;color:#aaa">Send a Super Chat - Your message shines gold + You support new episodes!</p>
+<div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-gold" style="flex:1" onclick="selectSuper(5000,this)">UGX 5K</button><button class="btn btn-dark" style="flex:1" onclick="selectSuper(10000,this)">10K</button><button class="btn btn-dark" style="flex:1" onclick="selectSuper(20000,this)">20K</button><button class="btn btn-dark" style="flex:1" onclick="selectSuper(50000,this)">50K</button></div>
+<input id="superMsg" placeholder="Super Chat message..." style="width:100%;padding:12px;background:#222;border:none;border-radius:8px;color:#fff;margin-top:10px">
+<input id="payPhone" placeholder="MoMo Number +256..." style="width:100%;padding:12px;background:#222;border:none;border-radius:8px;color:#fff;margin-top:8px">
+<button class="btn btn-gold" style="width:100%;margin-top:10px" onclick="sendSuperChat()">💛 SEND SUPER CHAT - <span id="superAmount">UGX 5,000</span></button>
+<div id="superChatFeed" style="margin-top:10px"></div>
+</div></div>
+
+<div style="padding:20px;text-align:center;color:#777;font-size:12px">STORY MOVIES • Kampala 🇺🇬 • Made with ❤️<br><button onclick="shareApp()" style="background:#222;color:#fff;border:none;padding:10px 20px;border-radius:20px;margin-top:10px">↗️ Share App</button></div>
+</div>
+
+<div id="adminLogin" class="auth hidden"><h1 style="color:#E50914">👑 ADMIN LOGIN</h1><input id="adminPass" type="password" placeholder="Admin Password"><button class="btn btn-red" onclick="loginAdmin()">LOGIN →</button><button class="btn btn-dark" onclick="closeAdmin()">← Back</button><p id="adminError" style="color:#FFD700;margin-top:10px"></p><p style="font-size:12px;color:#777">Default: admin123</p></div>
+
+<div id="adminPanel" class="hidden">
+<header><h1>👑 ADMIN</h1><button onclick="logoutAdmin()" style="background:#E50914;color:#fff;border:none;padding:8px 12px;border-radius:20px">Logout</button></header>
+<div class="admin-box" style="border:2px solid #25D366"><h3>💰 Earnings Dashboard</h3><p>💰 Total Earned: <b id="adminEarnings" style="color:#25D366">UGX 0</b></p><p>👑 VIP Members: <b id="vipCount">0</b></p><p>🔒 Premium Sales: <b id="premiumSales">0</b></p><p>💛 Super Chats: <b id="superCount">0</b></p><p style="font-size:11px;color:#aaa">Money goes to your Flutterwave / MoMo. This counter is for tracking.</p></div>
+
+<div class="admin-box"><h3>🔥 Firebase Settings</h3><textarea id="firebaseConfigInput" placeholder='Paste Firebase config JSON: {"apiKey":"..."}' style="height:70px"></textarea><button class="btn btn-gold" onclick="saveFirebaseConfig()">🔥 Save Firebase</button><p id="firebaseSaveMsg" style="font-size:12px;color:#25D366"></p><div class="sync-box">Status: <span id="firebaseStatusAdmin">Not connected</span></div></div>
+
+<div class="admin-box"><h3>☁️ Cloudinary Settings</h3><input id="cloudName" placeholder="Cloud Name e.g. dz123abc"><input id="uploadPreset" placeholder="Preset" value="story_movies"><button class="btn btn-blue" onclick="saveCloudSettings()">💾 Save Cloud</button><p id="cloudSaveMsg" style="font-size:12px;color:#25D366"></p></div>
+
+<div class="admin-box"><h3>💳 Payment Settings - Flutterwave</h3><p style="font-size:12px;color:#aaa">Get link from flutterwave.com > Payment Links > Create Link > Paste here. Fans pay via MoMo to this link.</p><label>Flutterwave Payment Link</label><input id="flutterLink" placeholder="https://flutterwave.com/pay/yourlink"><label>VIP Price (UGX)</label><input id="vipPriceInput" type="number" value="10000"><button class="btn btn-green" onclick="savePaymentSettings()">💾 Save Payment Settings</button></div>
+
+<div class="admin-box">
+<h3>📤 Upload New Movie</h3>
+<label>Title *</label><input id="newTitle" placeholder="e.g. S2 EP 6">
+<label>Description</label><textarea id="newDesc" placeholder="What happens?"></textarea>
+<label>Category</label><select id="newCat"><option>Series</option><option>Movie</option><option>Horror</option><option>Drama</option><option>Action</option></select>
+<label>💰 Price Type</label><select id="newPriceType" onchange="togglePrice()"><option value="free">🆓 FREE - Everyone can watch</option><option value="premium">🔒 PREMIUM - Fan must pay to watch</option></select>
+<div id="priceBox" style="display:none"><label>Premium Price (UGX) - Fan pays this to unlock</label><input id="newPrice" type="number" value="5000" placeholder="5000"></div>
+<label>🎬 Video File *</label>
+<div class="upload-zone" onclick="document.getElementById('videoFile').click()"><div style="font-size:40px">🎬</div><p><b>Tap to Pick Video</b></p><p style="font-size:11px;color:#25D366" id="videoFileName">No video selected</p></div>
+<input type="file" id="videoFile" accept="video/*" style="display:none" onchange="onVideoPicked(event)">
+<label>🖼️ Poster</label>
+<div class="upload-zone" onclick="document.getElementById('posterFile').click()" style="border-color:#666"><div style="font-size:30px">🖼️</div><p id="posterFileName">Tap to Pick Poster</p></div>
+<input type="file" id="posterFile" accept="image/*" style="display:none" onchange="onPosterPicked(event)">
+<img id="posterPreview" style="width:100%;height:150px;object-fit:cover;border-radius:10px;margin-top:10px;display:none">
+<video id="videoPreview" controls style="width:100%;margin-top:10px;display:none"></video>
+<div id="fileInfo" class="file-info"></div>
+<div class="progress" id="uploadProgress"><div class="progress-bar" id="progressBar"></div></div>
+<p id="progressText" style="font-size:12px;color:#25D366;margin-top:5px;display:none"></p>
+<label>OR Paste Link</label><input id="newVideoLink" placeholder="https://...">
+<button class="btn btn-red" onclick="publishMovie()" id="publishBtn">☁️🔥 UPLOAD + SYNC TO ALL PHONES</button>
+<button class="btn btn-dark" onclick="clearUpload()">🗑️ Clear</button>
+</div>
+<div class="admin-box"><h3>📂 Movies (<span id="adminCount">0</span>)</h3><div id="adminList"></div></div>
+<div class="admin-box"><h3>⚙️ Settings</h3><input id="newPass" placeholder="New Admin Password"><button class="btn btn-dark" onclick="changePass()">Change Password</button><button class="btn btn-dark" onclick="closeAdmin()">← Back</button></div>
+</div>
+
+<div id="videoModal" class="video-modal">
+<div class="video-top"><div><h3 id="videoTitle">Now Playing</h3><p id="videoDesc" style="font-size:12px;color:#aaa"></p></div><button onclick="closeVideo()" style="background:#E50914;color:#fff;border:none;padding:8px 15px;border-radius:20px">✖️ Close</button></div>
+<video id="realVideoPlayer" controls playsinline style="display:none"></video>
+<iframe id="youtubePlayer" frameborder="0" allowfullscreen style="display:none"></iframe>
+<div class="download-bar"><button class="btn btn-red" onclick="downloadCurrent()">⬇️ Download FREE / VIP</button><button class="btn btn-white" onclick="shareCurrent()">↗️ Share</button><button class="btn btn-dark" onclick="likeCurrent()">❤️ Like</button></div>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div id="payModal" class="pay-modal">
+<div class="pay-card">
+<h2 id="payTitle">🔒 Unlock Premium</h2><p id="payDesc" style="font-size:13px;color:#aaa;margin-top:5px"></p>
+<div style="background:#FFD700;color:#000;padding:12px;border-radius:10px;margin-top:12px;text-align:center"><b id="payAmount">UGX 5,000</b><br><span style="font-size:12px">One-time payment • Watch + Download forever</span></div>
+<label style="font-size:12px;color:#aaa">MoMo Number</label><input id="payModalPhone" placeholder="+256..." style="width:100%;padding:12px;background:#222;border:none;border-radius:8px;color:#fff;margin-top:8px">
+<p style="font-size:12px;color:#aaa;margin-top:10px">Choose Payment:</p>
+<div class="pay-option active" onclick="selectPayMethod('momo',this)"><span>📱 MTN MoMo / Airtel Money</span><span>✓</span></div>
+<div class="pay-option" onclick="selectPayMethod('card',this)"><span>💳 Card / Bank</span><span></span></div>
+<div class="pay-option" onclick="selectPayMethod('flutter',this)"><span>🌍 Flutterwave</span><span></span></div>
+<button class="btn btn-gold" style="width:100%;margin-top:12px" onclick="confirmPayment()">💳 PAY NOW - Unlock Instantly</button>
+<button class="btn btn-dark" style="width:100%;margin-top:8px" onclick="closePayModal()">Cancel</button>
+<p style="font-size:11px;color:#777;margin-top:8px;text-align:center">Demo Mode: Tap PAY NOW to simulate payment. Connect Flutterwave link in Admin to go live.</p>
+</div>
+</div>
+
+<script>
+var ADMIN_PASSWORD="mhkfnxtu";
+var CLOUD_NAME="", UPLOAD_PRESET="story_movies";
+var FLUTTER_LINK="https://flutterwave.com/pay/storymovies";
+var VIP_PRICE=10000;
+var movies=[], currentFilter="All", currentSearch="", currentMovie=null;
+var pickedVideoFile=null, pickedPosterFile=null, pickedPosterURL="";
+var db=null, firebaseConnected=false;
+var superAmount=5000, payMethod="momo", pendingPayMovie=null, pendingPayType="";
+var myUnlocked=[]; try{ myUnlocked=JSON.parse(localStorage.getItem('story_unlocked')||"[]"); }catch(e){}
+var isVIP=false; try{ isVIP=localStorage.getItem('story_vip')==="yes"; var vipExp=parseInt(localStorage.getItem('story_vip_exp')||0); if(vipExp && Date.now()>vipExp){ isVIP=false; localStorage.removeItem('story_vip'); } }catch(e){}
+var earnings=0; try{ earnings=parseInt(localStorage.getItem('story_earnings')||0); }catch(e){}
+try{
+  var sp=localStorage.getItem('story_admin_pass'); if(sp) ADMIN_PASSWORD=sp;
+  var cn=localStorage.getItem('story_cloud_name'); if(cn) CLOUD_NAME=cn;
+  var up=localStorage.getItem('story_upload_preset'); if(up) UPLOAD_PRESET=up;
+  var fl=localStorage.getItem('story_flutter_link'); if(fl) FLUTTER_LINK=fl;
+  var vp=localStorage.getItem('story_vip_price'); if(vp) VIP_PRICE=parseInt(vp);
+  var saved=localStorage.getItem('story_movies_backup');
+  if(saved) movies=JSON.parse(saved);
+  else movies=[
+    {id:1, title:"Shadows Of The Abyss - S2 EP 1: ONE YEAR LATER", desc:"Season 2 Premiere!", cat:"Series", poster:"https://picsum.photos/600/300?21", type:"youtube", video:"https://www.youtube.com/embed/dQw4w9WgXcQ", download:"https://www.youtube.com/watch?v=dQw4w9WgXcQ", duration:"24:10", views:"18K", priceType:"free", price:0, isCloud:false},
+    {id:2, title:"Shadows Of The Abyss - S2 EP 6: THE NEW CURSE 🔒 PREMIUM", desc:"PREMIUM - Early Access! Baby Nakato's curse returns...", cat:"Series", poster:"https://picsum.photos/600/300?26", type:"mp4", video:"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4", download:"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4", duration:"26:00", views:"8K", priceType:"premium", price:5000, isCloud:true},
+    {id:3, title:"Shadows Of The Abyss - S2 EP 5: THE BABY'S SHADOW", desc:"Shadow moves without her...", cat:"Horror", poster:"https://picsum.photos/600/300?25", type:"mp4", video:"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4", download:"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4", duration:"22:45", views:"15K", priceType:"free", price:0, isCloud:false},
+  ];
+}catch(e){ movies=[]; }
+function saveMoviesLocal(){ try{ localStorage.setItem('story_movies_backup', JSON.stringify(movies)); }catch(e){} }
+function saveUnlocked(){ try{ localStorage.setItem('story_unlocked', JSON.stringify(myUnlocked)); }catch(e){} }
+function isUnlocked(m){ if(m.priceType!=="premium") return true; if(isVIP) return true; return myUnlocked.includes(m.id); }
+
+// FIREBASE
+function initFirebase(){
+  try{
+    var cfgStr=localStorage.getItem('story_firebase_config');
+    if(!cfgStr){ updateFirebaseStatus("Not connected"); return; }
+    var cfg=JSON.parse(cfgStr);
+    if(!firebase.apps.length) firebase.initializeApp(cfg);
+    db=firebase.database(); firebaseConnected=true;
+    updateFirebaseStatus("🟢 Connected - Live Sync ON");
+    document.getElementById('syncStatus').innerHTML='🟢 LIVE SYNC - New movies appear instantly';
+    db.ref('movies').on('value', function(snap){
+      var val=snap.val();
+      if(val){ var arr=Object.values(val); arr.sort(function(a,b){return b.id-a.id;}); movies=arr; saveMoviesLocal(); renderAll(); }
+      else if(movies.length>0){ var obj={}; movies.forEach(function(m){obj[m.id]=m;}); db.ref('movies').set(obj); }
+    });
+  }catch(e){ updateFirebaseStatus("Error: "+e.message); }
+}
+function updateFirebaseStatus(m){ var a=document.getElementById('firebaseStatusAdmin'); if(a) a.innerText=m; }
+function saveFirebaseConfig(){
+  var txt=document.getElementById('firebaseConfigInput').value.trim();
+  if(!txt){alert("Paste Firebase config");return;}
+  try{ var cfg=JSON.parse(txt); localStorage.setItem('story_firebase_config', JSON.stringify(cfg)); document.getElementById('firebaseSaveMsg').innerText="✅ Saved!"; initFirebase(); alert("✅ Firebase Connected!"); }catch(e){ alert("Invalid JSON"); }
+}
+function saveCloudSettings(){
+  var cn=document.getElementById('cloudName').value.trim(); var up=document.getElementById('uploadPreset').value.trim()||"story_movies";
+  if(!cn){alert("Paste Cloud Name");return;}
+  CLOUD_NAME=cn; UPLOAD_PRESET=up; try{ localStorage.setItem('story_cloud_name',cn); localStorage.setItem('story_upload_preset',up); }catch(e){}
+  document.getElementById('cloudSaveMsg').innerText="✅ Saved: "+cn; updateCloudStatus(); alert("✅ Cloud Connected");
+}
+function updateCloudStatus(){ var h=document.getElementById('cloudStatusAdmin'); if(h) h.innerText=CLOUD_NAME?"Connected: "+CLOUD_NAME:"Not configured"; }
+function savePaymentSettings(){
+  var fl=document.getElementById('flutterLink').value.trim(); var vp=parseInt(document.getElementById('vipPriceInput').value)||10000;
+  if(fl){ FLUTTER_LINK=fl; try{localStorage.setItem('story_flutter_link',fl);}catch(e){} }
+  VIP_PRICE=vp; try{localStorage.setItem('story_vip_price',vp);}catch(e){}
+  alert("✅ Payment Saved!\nFlutterwave: "+FLUTTER_LINK+"\nVIP Price: UGX "+VIP_PRICE);
+}
+function togglePrice(){ var t=document.getElementById('newPriceType').value; document.getElementById('priceBox').style.display=t==="premium"?"block":"none"; }
+function onVideoPicked(e){ var f=e.target.files[0]; if(!f) return; pickedVideoFile=f; document.getElementById('videoFileName').innerText="✅ "+f.name+" • "+(f.size/1024/1024).toFixed(1)+" MB"; document.getElementById('fileInfo').style.display='block'; document.getElementById('fileInfo').innerHTML="📹 "+f.name+"<br>Size: "+(f.size/1024/1024).toFixed(1)+" MB"; var v=document.getElementById('videoPreview'); v.src=URL.createObjectURL(f); v.style.display='block'; }
+function onPosterPicked(e){ var f=e.target.files[0]; if(!f) return; pickedPosterFile=f; document.getElementById('posterFileName').innerText="✅ "+f.name; var r=new FileReader(); r.onload=function(ev){ var img=document.getElementById('posterPreview'); img.src=ev.target.result; img.style.display='block'; pickedPosterURL=ev.target.result; }; r.readAsDataURL(f); }
+function clearUpload(){ pickedVideoFile=null; pickedPosterFile=null; pickedPosterURL=""; document.getElementById('videoFile').value=""; document.getElementById('posterFile').value=""; document.getElementById('videoFileName').innerText="No video selected"; document.getElementById('posterFileName').innerText="Tap to Pick Poster"; document.getElementById('posterPreview').style.display='none'; document.getElementById('videoPreview').style.display='none'; document.getElementById('fileInfo').style.display='none'; document.getElementById('newVideoLink').value=""; }
+function uploadToCloudinary(file, isPoster){
+  return new Promise(function(resolve,reject){
+    var xhr=new XMLHttpRequest(); xhr.open("POST","https://api.cloudinary.com/v1_1/"+CLOUD_NAME+"/"+(isPoster?"image":"video")+"/upload",true);
+    xhr.upload.onprogress=function(e){ if(e.lengthComputable){ var pct=Math.round((e.loaded/e.total)*100); document.getElementById('uploadProgress').style.display='block'; document.getElementById('progressBar').style.width=pct+"%"; document.getElementById('progressText').style.display='block'; document.getElementById('progressText').innerText="☁️ Uploading: "+pct+"% - Keep app open!"; } };
+    xhr.onload=function(){ if(xhr.status>=200 && xhr.status<300) resolve(JSON.parse(xhr.responseText)); else reject(new Error("Upload failed")); };
+    xhr.onerror=function(){ reject(new Error("Network error")); };
+    var fd=new FormData(); fd.append("file",file); fd.append("upload_preset",UPLOAD_PRESET); fd.append("folder","story_movies"); xhr.send(fd);
+  });
+}
+async function publishMovie(){
+  var title=document.getElementById('newTitle').value.trim(); var desc=document.getElementById('newDesc').value.trim()||"New movie"; var cat=document.getElementById('newCat').value; var priceType=document.getElementById('newPriceType').value; var price=priceType==="premium"?parseInt(document.getElementById('newPrice').value)||5000:0; var link=document.getElementById('newVideoLink').value.trim();
+  if(!title){alert("Type Title");return;} if(!pickedVideoFile && !link){alert("Pick Video OR Paste Link");return;}
+  var btn=document.getElementById('publishBtn'); btn.innerText="⏳ Uploading..."; btn.disabled=true;
+  var newId=Date.now(); var movie={id:newId,title:title,desc:desc,cat:cat,poster:"https://picsum.photos/600/300?"+Math.floor(Math.random()*100),type:"mp4",video:"",download:"",duration:"--:--",views:"0",priceType:priceType,price:price,isCloud:false,createdAt:Date.now()};
+  if(pickedPosterFile && CLOUD_NAME){ try{ var pres=await uploadToCloudinary(pickedPosterFile,true); movie.poster=pres.secure_url; }catch(e){ if(pickedPosterURL) movie.poster=pickedPosterURL; } } else if(pickedPosterURL) movie.poster=pickedPosterURL;
+  if(pickedVideoFile){
+    if(!CLOUD_NAME){alert("Configure Cloudinary first!"); btn.disabled=false; btn.innerText="UPLOAD + SYNC"; return;}
+    try{ var res=await uploadToCloudinary(pickedVideoFile,false); movie.video=res.secure_url; movie.download=res.secure_url; movie.isCloud=true; movie.duration=res.duration?Math.floor(res.duration/60)+":"+String(Math.floor(res.duration%60)).padStart(2,'0'):"--:--"; }catch(e){ btn.disabled=false; btn.innerText="UPLOAD + SYNC"; alert("Cloud Failed: "+e.message); return; }
+  } else { if(link.includes("youtube")){ movie.type="youtube"; movie.video=link; movie.download=link; } else { movie.type="mp4"; movie.video=link; movie.download=link; movie.isCloud=true; } }
+  if(firebaseConnected && db){ try{ await db.ref('movies/'+newId).set(movie); }catch(e){ movies.unshift(movie); saveMoviesLocal(); renderAll(); } } else { movies.unshift(movie); saveMoviesLocal(); renderAll(); }
+  alert("✅ PUBLISHED! "+(priceType==="premium"?"🔒 Premium UGX "+price.toLocaleString()+" - Fans must pay to watch!":"🆓 Free - Everyone can watch!")+"\n"+(firebaseConnected?"🔥 Synced to ALL phones!":"Saved on this phone"));
+  document.getElementById('newTitle').value=""; document.getElementById('newDesc').value=""; document.getElementById('newVideoLink').value=""; clearUpload(); btn.innerText="☁️🔥 UPLOAD + SYNC"; btn.disabled=false; document.getElementById('uploadProgress').style.display='none';
+}
+
+// USER VIEW + MONETIZE
+function getFiltered(){ return movies.filter(function(m){ if(currentFilter==="Premium") return m.priceType==="premium"; if(currentFilter==="Free") return m.priceType!=="premium"; if(currentFilter==="Downloads") return m.downloaded; if(currentFilter==="All") return true; return m.cat===currentFilter; }); }
+function renderAll(){
+  var list=getFiltered();
+  document.getElementById('movieCount').innerText=list.length+" movies • "+(isVIP?"👑 YOU ARE VIP - All Unlocked!":"🔒 Some Premium - Pay to unlock")+" • Tap ▶️ to Watch";
+  document.getElementById('walletDisplay').innerText="💰 UGX "+earnings.toLocaleString()+" earned • "+(isVIP?"👑 VIP":"");
+  document.getElementById('vipStatus').innerText=isVIP?"✅ ACTIVE VIP - All Unlocked!":"Not VIP yet";
+  if(isVIP) document.getElementById('vipBanner').style.display='none'; else document.getElementById('vipBanner').style.display='block';
+  var trending=movies.slice(0,4);
+  document.getElementById('trendingRow').innerHTML=trending.map(function(m){ var locked=!isUnlocked(m); return '<div class="card" onclick="playMovie('+m.id+')">'+(locked?'<span class="lock-badge">🔒 UGX '+m.price.toLocaleString()+'</span>':'<span class="vip-badge">🆓 FREE</span>')+'<img src="'+m.poster+'"><div class="card-body"><h3>'+m.title+'</h3><p>👁️ '+m.views+' • '+m.duration+'</p></div></div>'; }).join('');
+  document.getElementById('movieGrid').innerHTML=list.length?list.map(function(m){ var locked=!isUnlocked(m); return '<div class="card" onclick="playMovie('+m.id+')">'+(locked?'<span class="lock-badge">🔒 UGX '+m.price.toLocaleString()+'</span>':'')+'<img src="'+m.poster+'"><div class="card-body"><h3>'+m.title+'</h3><p>'+m.desc.substring(0,50)+'...</p><p>👁️ '+m.views+' • ⏱️ '+m.duration+'</p><div style="display:flex;gap:5px;margin-top:8px"><button onclick="event.stopPropagation();playMovie('+m.id+')" style="flex:1;background:'+(locked?'#FFD700;color:#000':'#E50914;color:#fff')+';border:none;padding:8px;border-radius:8px">'+(locked?'🔒 Unlock':'▶️ Watch')+'</button><button onclick="event.stopPropagation();downloadMovie('+m.id+')" style="flex:1;background:#25D366;color:#fff;border:none;padding:8px;border-radius:8px">⬇️ '+(locked?'Unlock':'Free')+'</button></div></div></div>'; }).join(''):'<p style="padding:20px;color:#aaa">No movies</p>';
+  document.getElementById('episodeList').innerHTML=movies.map(function(m){ var locked=!isUnlocked(m); return '<div class="episode" onclick="playMovie('+m.id+')"><img src="'+m.poster+'"><div style="flex:1"><h3 style="font-size:14px">'+m.title+' '+(locked?'🔒':'')+'</h3><p style="font-size:12px;color:#aaa">'+m.duration+' • '+(locked?'Premium UGX '+m.price.toLocaleString():'FREE')+'</p></div><button onclick="event.stopPropagation();playMovie('+m.id+')" style="background:'+(locked?'#FFD700;color:#000':'#E50914;color:#fff')+';border:none;padding:8px 12px;border-radius:20px">'+(locked?'🔒':'▶️')+'</button><button onclick="event.stopPropagation();downloadMovie('+m.id+')" style="background:#25D366;color:#fff;border:none;padding:8px 12px;border-radius:20px">⬇️</button></div>'; }).join('');
+  if(movies[0]){ document.getElementById('heroImg').src=movies[0].poster; document.getElementById('heroTitle').innerText=movies[0].title; document.getElementById('heroDesc').innerText=movies[0].desc; }
+  updateAdminStats();
+}
+function updateAdminStats(){
+  var ae=document.getElementById('adminEarnings'); if(ae) ae.innerText="UGX "+earnings.toLocaleString();
+  var vs=document.getElementById('vipCount'); if(vs) vs.innerText=isVIP?"1 (You)":"0";
+  var ps=document.getElementById('premiumSales'); if(ps) ps.innerText=myUnlocked.length;
+  var sc=document.getElementById('superCount'); if(sc) sc.innerText=document.getElementById('superChatFeed').children.length;
+}
+function filterCat(c,b){ currentFilter=c; document.querySelectorAll('.tabs button').forEach(function(x){x.classList.remove('active');}); if(b) b.classList.add('active'); renderAll(); }
+function searchMovies(){ currentSearch=document.getElementById('searchInput').value; renderAll(); }
+function playFeatured(){ if(movies[0]) playMovie(movies[0].id); }
+function downloadFeatured(){ if(movies[0]) downloadMovie(movies[0].id); }
+
+// PAYMENT
+function playMovie(id){
+  var m=movies.find(function(x){return x.id===id;}); if(!m) return;
+  if(!isUnlocked(m)){ openPayModal(m, "watch"); return; }
+  currentMovie=m;
+  document.getElementById('videoTitle').innerText=m.title;
+  document.getElementById('videoDesc').innerText=m.desc+" • "+m.duration+" • "+m.views+" views • "+(m.priceType==="premium"?"👑 Premium - Unlocked":"🆓 Free");
+  var modal=document.getElementById('videoModal'); var v=document.getElementById('realVideoPlayer'); var y=document.getElementById('youtubePlayer');
+  modal.style.display='flex';
+  if(m.type==="youtube"){ var embed=m.video; if(embed.includes("watch?v=")) embed=embed.replace("watch?v=","embed/"); if(embed.includes("youtu.be/")) embed=embed.replace("youtu.be/","www.youtube.com/embed/"); v.style.display='none'; v.pause(); y.style.display='block'; y.src=embed+"?autoplay=1"; }
+  else { y.style.display='none'; y.src=""; v.style.display='block'; v.src=m.video; v.play(); }
+}
+function closeVideo(){ document.getElementById('videoModal').style.display='none'; var v=document.getElementById('realVideoPlayer'); v.pause(); v.src=""; document.getElementById('youtubePlayer').src=""; }
+function downloadCurrent(){ if(currentMovie) downloadMovie(currentMovie.id); }
+function downloadMovie(id){
+  var m=movies.find(function(x){return x.id===id;}); if(!m) return;
+  if(!isUnlocked(m)){ openPayModal(m, "download"); return; }
+  m.downloaded=true; saveMoviesLocal();
+  if(m.type==="youtube"){ alert("For YouTube: Tap ••• > Download"); window.open(m.download||m.video,"_blank"); return; }
+  var a=document.createElement('a'); a.href=m.download||m.video; a.download=m.title.replace(/[^a-z0-9]/gi,'_')+".mp4"; a.target="_blank"; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  alert("✅ Downloading: "+m.title);
+  renderAll();
+}
+function openPayModal(m, type){
+  pendingPayMovie=m; pendingPayType=type;
+  document.getElementById('payTitle').innerText=type==="vip"?"👑 Become VIP":"🔒 Unlock: "+m.title;
+  document.getElementById('payDesc').innerText=type==="vip"?"Watch ALL Premium movies FREE for 30 days. No locks!":m.desc;
+  document.getElementById('payAmount').innerText="UGX "+(type==="vip"?VIP_PRICE:m.price).toLocaleString();
+  document.getElementById('payModal').style.display='flex';
+}
+function closePayModal(){ document.getElementById('payModal').style.display='none'; pendingPayMovie=null; }
+function selectPayMethod(method, el){ payMethod=method; document.querySelectorAll('.pay-option').forEach(function(o){o.classList.remove('active');}); el.classList.add('active'); }
+function confirmPayment(){
+  var phone=document.getElementById('payModalPhone').value.trim();
+  if(!phone){ alert("Enter MoMo Number!"); return; }
+  var amount=pendingPayType==="vip"?VIP_PRICE:(pendingPayMovie?pendingPayMovie.price:0);
+  // Open Flutterwave for real payment
+  if(FLUTTER_LINK && !FLUTTER_LINK.includes("yourlink")){
+    window.open(FLUTTER_LINK+"?amount="+amount+"&phone="+phone, "_blank");
+  }
+  // Demo: simulate success - In real app, Flutterwave webhook confirms
+  setTimeout(function(){
+    if(pendingPayType==="vip"){
+      isVIP=true; var exp=Date.now()+30*24*60*60*1000; try{ localStorage.setItem('story_vip','yes'); localStorage.setItem('story_vip_exp',exp); }catch(e){}
+      earnings+=VIP_PRICE; try{localStorage.setItem('story_earnings',earnings);}catch(e){}
+      alert("🎉 VIP ACTIVATED!\n\nYou can now watch ALL movies FREE for 30 days!\n\nThank you for supporting STORY MOVIES!");
+    } else if(pendingPayMovie){
+      myUnlocked.push(pendingPayMovie.id); saveUnlocked();
+      earnings+=pendingPayMovie.price; try{localStorage.setItem('story_earnings',earnings);}catch(e){}
+      alert("✅ UNLOCKED!\n\n"+pendingPayMovie.title+"\n\nNow tap ▶️ Watch - It will play!");
+      var mid=pendingPayMovie.id;
+      closePayModal(); renderAll();
+      setTimeout(function(){ playMovie(mid); },500);
+      return;
+    }
+    closePayModal(); renderAll();
+  }, 800);
+}
+function buyVIP(){ openPayModal(null, "vip"); }
+function selectSuper(a, btn){ superAmount=a; document.getElementById('superAmount').innerText="UGX "+a.toLocaleString(); document.querySelectorAll('.super-box button').forEach(function(b){}); }
+function sendSuperChat(){
+  var msg=document.getElementById('superMsg').value.trim(); var phone=document.getElementById('payPhone').value.trim();
+  if(!msg){ alert("Type Super Chat message"); return; } if(!phone){ alert("Enter MoMo Number"); return; }
+  if(FLUTTER_LINK && !FLUTTER_LINK.includes("yourlink")) window.open(FLUTTER_LINK+"?amount="+superAmount+"&phone="+phone, "_blank");
+  earnings+=superAmount; try{localStorage.setItem('story_earnings',earnings);}catch(e){}
+  var feed=document.getElementById('superChatFeed');
+  feed.innerHTML='<div style="background:linear-gradient(45deg,#FFD700,#FFA500);color:#000;padding:10px;border-radius:10px;margin-top:8px"><b>💛 Super Chat - UGX '+superAmount.toLocaleString()+'</b><br>'+msg+'</div>'+feed.innerHTML;
+  alert("💛 Super Chat Sent! UGX "+superAmount.toLocaleString()+" - Thank you!");
+  document.getElementById('superMsg').value=""; renderAll();
+}
+function shareCurrent(){ if(!currentMovie) return; if(navigator.share){navigator.share({title:currentMovie.title,text:'Watch '+currentMovie.title,url:location.href});}else{alert('Copy: '+location.href);} }
+function likeCurrent(){ alert('❤️ Liked!'); }
+function shareApp(){ if(navigator.share){navigator.share({title:'STORY MOVIES',text:'Watch & Download Movies FREE',url:location.href});}else{alert('Copy: '+location.href);} }
+function installAPK(){
+  // PWA Install
+  if(window.deferredPrompt){ window.deferredPrompt.prompt(); window.deferredPrompt.userChoice.then(function(c){ if(c.outcome==='accepted') alert("✅ Installing..."); }); }
+  else { alert("📱 To Install APK:\n\n1. Tap ⋮ (3 dots) in Chrome > Add to Home Screen > Install\n\nOR\n\n2. Go to PWABuilder.com > Paste this link > Download APK\n\nLink: "+location.href); }
+}
+var deferredPrompt=null;
+window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); window.deferredPrompt=e; document.getElementById('installBanner').style.display='flex'; });
+
+// ADMIN
+function openAdminLogin(){ document.getElementById('homeScreen').classList.add('hidden'); document.getElementById('adminLogin').classList.remove('hidden'); document.getElementById('adminPanel').classList.add('hidden'); }
+function closeAdmin(){ document.getElementById('adminLogin').classList.add('hidden'); document.getElementById('adminPanel').classList.add('hidden'); document.getElementById('homeScreen').classList.remove('hidden'); renderAll(); }
+function loginAdmin(){ var p=document.getElementById('adminPass').value; if(p===ADMIN_PASSWORD){ document.getElementById('adminLogin').classList.add('hidden'); document.getElementById('adminPanel').classList.remove('hidden'); renderAdmin(); updateCloudStatus(); } else { document.getElementById('adminError').innerText="❌ Wrong password!"; } }
+function logoutAdmin(){ document.getElementById('adminPanel').classList.add('hidden'); document.getElementById('homeScreen').classList.remove('hidden'); }
+function renderAdmin(){
+  document.getElementById('adminCount').innerText=movies.length;
+  document.getElementById('adminList').innerHTML=movies.map(function(m){ return '<div style="display:flex;gap:10px;background:#222;padding:10px;border-radius:10px;margin-top:8px;align-items:center"><img src="'+m.poster+'" style="width:60px;height:40px;object-fit:cover;border-radius:6px"><div style="flex:1"><b style="font-size:13px">'+m.title+'</b><br><span style="font-size:11px;color:#aaa">'+(m.priceType==="premium"?"🔒 Premium UGX "+m.price.toLocaleString():"🆓 Free")+' • '+m.duration+'</span></div><button onclick="playMovie('+m.id+')" style="background:#25D366;color:#fff;border:none;padding:6px 10px;border-radius:15px">▶️</button><button onclick="deleteMovie('+m.id+')" style="background:#E50914;color:#fff;border:none;padding:6px 10px;border-radius:15px">🗑️</button></div>'; }).join('');
+}
+function deleteMovie(id){ if(!confirm("Delete from ALL phones?")) return; if(firebaseConnected && db) db.ref('movies/'+id).remove(); movies=movies.filter(function(m){return m.id!==id;}); saveMoviesLocal(); renderAll(); renderAdmin(); }
+function changePass(){ var np=document.getElementById('newPass').value.trim(); if(!np){alert("Type new password");return;} ADMIN_PASSWORD=np; try{localStorage.setItem('story_admin_pass',np);}catch(e){} alert("✅ Password changed"); document.getElementById('newPass').value=""; }
+if('serviceWorker' in navigator){ window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+initFirebase();
+renderAll();
+</script>
+</body>
+</html>
